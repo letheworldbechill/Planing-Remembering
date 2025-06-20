@@ -1,0 +1,197 @@
+<!DOCTYPE html><html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ToDo- & Putzplan</title>
+  <style>
+    :root {
+      --bg: #f9f9f9;
+      --text: #333;
+      --card: #fff;
+      --border: #ddd;
+      --btn-bg: red;
+      --btn-text: white;
+    }[data-theme="dark"] {
+  --bg: #1e1e1e;
+  --text: #eee;
+  --card: #2e2e2e;
+  --border: #555;
+  --btn-bg: #900;
+}
+
+body {
+  font-family: sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  max-width: 600px;
+  margin: auto;
+  padding: 2rem;
+}
+h1, h2 {
+  color: var(--text);
+}
+input, button {
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+}
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+li {
+  padding: 0.4rem;
+  background: var(--card);
+  margin-top: 0.3rem;
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.remove-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  cursor: pointer;
+}
+.calendar {
+  margin-top: 1rem;
+}
+.dark-toggle {
+  margin-top: 1rem;
+  cursor: pointer;
+}
+.export-btn {
+  margin-top: 1rem;
+}
+
+  </style>
+</head>
+<body>
+  <h1>Mein Alltag</h1>
+  <button class="dark-toggle" onclick="toggleTheme()">🌙/☀️ Modus wechseln</button>
+  <button class="export-btn" onclick="exportData()">📁 Exportieren</button>  <section>
+    <h2>ToDo-Liste</h2>
+    <input type="text" id="todoInput" placeholder="Neue Aufgabe">
+    <input type="datetime-local" id="todoReminder">
+    <button onclick="addTask('todo')">Hinzufügen</button>
+    <ul id="todoList"></ul>
+  </section>  <section>
+    <h2>Putzplan</h2>
+    <input type="text" id="putzInput" placeholder="Neue Putzaufgabe">
+    <input type="datetime-local" id="putzReminder">
+    <button onclick="addTask('putz')">Hinzufügen</button>
+    <ul id="putzList"></ul>
+  </section>  <section class="calendar">
+    <h2>Kalender (nächste Termine)</h2>
+    <ul id="calendarList"></ul>
+  </section>  <script>
+    function loadTasks() {
+      ['todo', 'putz'].forEach(type => {
+        const tasks = JSON.parse(localStorage.getItem(type + 'Tasks') || '[]');
+        renderList(type, tasks);
+      });
+      updateCalendar();
+      checkNotifications();
+    }
+
+    function addTask(type) {
+      const input = document.getElementById(type + 'Input');
+      const reminder = document.getElementById(type + 'Reminder').value;
+      const text = input.value.trim();
+      if (!text) return;
+      const tasks = JSON.parse(localStorage.getItem(type + 'Tasks') || '[]');
+      tasks.push({ text, reminder });
+      localStorage.setItem(type + 'Tasks', JSON.stringify(tasks));
+      input.value = '';
+      document.getElementById(type + 'Reminder').value = '';
+      renderList(type, tasks);
+      updateCalendar();
+    }
+
+    function removeTask(type, index) {
+      const tasks = JSON.parse(localStorage.getItem(type + 'Tasks') || '[]');
+      tasks.splice(index, 1);
+      localStorage.setItem(type + 'Tasks', JSON.stringify(tasks));
+      renderList(type, tasks);
+      updateCalendar();
+    }
+
+    function renderList(type, tasks) {
+      const list = document.getElementById(type + 'List');
+      list.innerHTML = '';
+      tasks.forEach((task, index) => {
+        const li = document.createElement('li');
+        li.innerHTML = `${task.text} <small>${task.reminder ? new Date(task.reminder).toLocaleString() : ''}</small>`;
+        const btn = document.createElement('button');
+        btn.textContent = 'Entfernen';
+        btn.className = 'remove-btn';
+        btn.onclick = () => removeTask(type, index);
+        li.appendChild(btn);
+        list.appendChild(li);
+      });
+    }
+
+    function updateCalendar() {
+      const calendarList = document.getElementById('calendarList');
+      calendarList.innerHTML = '';
+      const allTasks = ['todo', 'putz'].flatMap(type => {
+        const tasks = JSON.parse(localStorage.getItem(type + 'Tasks') || '[]');
+        return tasks.filter(t => t.reminder).map(t => ({ ...t, type }));
+      });
+      allTasks.sort((a, b) => new Date(a.reminder) - new Date(b.reminder));
+      allTasks.forEach(task => {
+        const li = document.createElement('li');
+        li.textContent = `${new Date(task.reminder).toLocaleString()}: ${task.text} [${task.type}]`;
+        calendarList.appendChild(li);
+      });
+    }
+
+    function toggleTheme() {
+      const current = document.documentElement.getAttribute('data-theme');
+      const newTheme = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', newTheme);
+      localStorage.setItem('theme', newTheme);
+    }
+
+    function exportData() {
+      const data = {
+        todo: JSON.parse(localStorage.getItem('todoTasks') || '[]'),
+        putz: JSON.parse(localStorage.getItem('putzTasks') || '[]')
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'mein_alltag_export.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function checkNotifications() {
+      if (Notification.permission !== 'granted') {
+        Notification.requestPermission();
+      } else {
+        const now = new Date();
+        ['todo', 'putz'].forEach(type => {
+          const tasks = JSON.parse(localStorage.getItem(type + 'Tasks') || '[]');
+          tasks.forEach(task => {
+            if (task.reminder) {
+              const reminderTime = new Date(task.reminder);
+              const timeDiff = reminderTime - now;
+              if (timeDiff > 0 && timeDiff < 60000) { // in der nächsten Minute
+                new Notification(`Erinnerung (${type}):`, { body: task.text });
+              }
+            }
+          });
+        });
+      }
+    }
+
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    document.documentElement.setAttribute('data-theme', savedTheme);
+
+    loadTasks();
+    setInterval(checkNotifications, 60000);
+  </script></body>
+</html>
