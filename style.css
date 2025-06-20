@@ -1,0 +1,75 @@
+:root {
+  --bg: #f9f9f9;
+  --text: #333;
+  --card: #fff;
+  --border: #ddd;
+  --btn-bg: red;
+  --btn-text: white;
+}
+
+[data-theme="dark"] {
+  --bg: #1e1e1e;
+  --text: #eee;
+  --card: #2e2e2e;
+  --border: #555;
+  --btn-bg: #900;
+}
+
+body {
+  font-family: sans-serif;
+  background-color: var(--bg);
+  color: var(--text);
+  max-width: 600px;
+  margin: auto;
+  padding: 2rem;
+}
+
+h1, h2 {
+  color: var(--text);
+}
+
+input, button, select {
+  padding: 0.5rem;
+  margin-top: 0.5rem;
+  font-size: 1rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+ul {
+  list-style: none;
+  padding-left: 0;
+}
+
+li {
+  padding: 0.4rem;
+  background: var(--card);
+  margin-top: 0.3rem;
+  border: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.remove-btn {
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: none;
+  cursor: pointer;
+}
+
+.calendar, .import-export {
+  margin-top: 1rem;
+}
+
+.dark-toggle {
+  margin-top: 1rem;
+  cursor: pointer;
+}
+
+@media (max-width: 600px) {
+  body {
+    padding: 1rem;
+  }
+}
